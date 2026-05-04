@@ -9,24 +9,37 @@
 body {
     font-family: Arial;
     text-align: center;
-    background: #0f2027;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     color: white;
 }
 
-canvas {
-    background: #222;
-    margin: 10px;
-    border-radius: 10px;
-}
+h1 { margin-top: 10px; }
 
-button {
-    margin: 4px;
+select, button {
+    margin: 5px;
     padding: 10px;
     font-size: 16px;
+    border-radius: 8px;
+}
+
+canvas {
+    background: #111;
+    border-radius: 10px;
+    margin: 10px;
+}
+
+#palavra {
+    font-size: 28px;
+    letter-spacing: 8px;
+    margin: 20px 0;
 }
 
 .vitoria { color: #00ff88; }
 .derrota { color: red; }
+
+@media (max-width: 600px) {
+    #palavra { font-size: 22px; }
+}
 </style>
 </head>
 
@@ -34,23 +47,17 @@ button {
 
 <h1>🪓 FORCA PRO</h1>
 
-<p>
-Categoria:
 <select id="categoria" onchange="iniciar()">
 <option value="animais">Animais</option>
 <option value="frutas">Frutas</option>
 <option value="paises">Países</option>
 </select>
-</p>
 
-<p>
-Dificuldade:
 <select id="dificuldade" onchange="iniciar()">
 <option value="facil">Fácil</option>
 <option value="medio">Médio</option>
 <option value="dificil">Difícil</option>
 </select>
-</p>
 
 <canvas id="forca" width="200" height="200"></canvas>
 
@@ -58,11 +65,6 @@ Dificuldade:
 <div id="palavra"></div>
 <p id="status"></p>
 <div id="letras"></div>
-
-<p>🏆 Recorde: <span id="recorde">0</span></p>
-
-<audio id="acerto" src="https://www.soundjay.com/buttons/sounds/button-4.mp3"></audio>
-<audio id="erro" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
 
 <script>
 const PALAVRAS = {
@@ -72,21 +74,25 @@ const PALAVRAS = {
 };
 
 let palavra = "";
+let ultimaPalavra = "";
 let letras = [];
 let erros = 0;
 let pontos = 0;
 let inicio;
-let recorde = localStorage.getItem("recorde") || 0;
-
-document.getElementById("recorde").innerText = recorde;
-
-const MAX_ERROS_BASE = 6;
+let max_erros = 6;
 
 function iniciar() {
     const categoria = document.getElementById("categoria").value;
     const dificuldade = document.getElementById("dificuldade").value;
+    const lista = PALAVRAS[categoria];
 
-    palavra = PALAVRAS[categoria][Math.floor(Math.random()*PALAVRAS[categoria].length)];
+    // evitar repetir palavra
+    do {
+        palavra = lista[Math.floor(Math.random() * lista.length)];
+    } while (palavra === ultimaPalavra);
+
+    ultimaPalavra = palavra;
+
     letras = [];
     erros = 0;
     pontos = 0;
@@ -96,81 +102,41 @@ function iniciar() {
     else if (dificuldade === "medio") max_erros = 6;
     else max_erros = 4;
 
+    document.getElementById("status").innerHTML = "";
+    document.getElementById("letras").innerHTML = "";
+
     render();
 }
 
-function desenharForca() {
+function desenhar() {
     const c = document.getElementById("forca");
     const ctx = c.getContext("2d");
 
     ctx.clearRect(0,0,200,200);
-
     ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
 
-    // base
     ctx.beginPath();
-    ctx.moveTo(10,190);
-    ctx.lineTo(190,190);
+    ctx.moveTo(10,190); ctx.lineTo(190,190);
+    ctx.moveTo(50,190); ctx.lineTo(50,20);
+    ctx.lineTo(120,20); ctx.lineTo(120,40);
     ctx.stroke();
 
-    if (erros > 0) {
-        ctx.beginPath();
-        ctx.moveTo(50,190);
-        ctx.lineTo(50,20);
-        ctx.lineTo(120,20);
-        ctx.lineTo(120,40);
-        ctx.stroke();
-    }
-
-    if (erros > 1) { // cabeça
-        ctx.beginPath();
-        ctx.arc(120,60,20,0,Math.PI*2);
-        ctx.stroke();
-    }
-
-    if (erros > 2) { // corpo
-        ctx.beginPath();
-        ctx.moveTo(120,80);
-        ctx.lineTo(120,140);
-        ctx.stroke();
-    }
-
-    if (erros > 3) { // braço esquerdo
-        ctx.beginPath();
-        ctx.moveTo(120,100);
-        ctx.lineTo(90,120);
-        ctx.stroke();
-    }
-
-    if (erros > 4) { // braço direito
-        ctx.beginPath();
-        ctx.moveTo(120,100);
-        ctx.lineTo(150,120);
-        ctx.stroke();
-    }
-
-    if (erros > 5) { // perna esquerda
-        ctx.beginPath();
-        ctx.moveTo(120,140);
-        ctx.lineTo(90,170);
-        ctx.stroke();
-    }
-
-    if (erros > 6) { // perna direita
-        ctx.beginPath();
-        ctx.moveTo(120,140);
-        ctx.lineTo(150,170);
-        ctx.stroke();
-    }
+    if (erros > 0) { ctx.beginPath(); ctx.arc(120,60,20,0,Math.PI*2); ctx.stroke(); }
+    if (erros > 1) { ctx.beginPath(); ctx.moveTo(120,80); ctx.lineTo(120,140); ctx.stroke(); }
+    if (erros > 2) { ctx.beginPath(); ctx.moveTo(120,100); ctx.lineTo(90,120); ctx.stroke(); }
+    if (erros > 3) { ctx.beginPath(); ctx.moveTo(120,100); ctx.lineTo(150,120); ctx.stroke(); }
+    if (erros > 4) { ctx.beginPath(); ctx.moveTo(120,140); ctx.lineTo(90,170); ctx.stroke(); }
+    if (erros > 5) { ctx.beginPath(); ctx.moveTo(120,140); ctx.lineTo(150,170); ctx.stroke(); }
 }
 
 function render() {
-    desenharForca();
+    desenhar();
 
     const tempo = Math.floor((Date.now() - inicio) / 1000);
 
     document.getElementById("info").innerText =
-        `Tempo: ${tempo}s | Erros: ${erros} | Pontos: ${pontos}`;
+        `Tempo: ${tempo}s | Erros: ${erros}/${max_erros} | Pontos: ${pontos}`;
 
     const palavraMostrada = palavra
         .split("")
@@ -183,21 +149,15 @@ function render() {
     const perdeu = erros >= max_erros;
 
     if (ganhou) {
-        if (pontos > recorde) {
-            recorde = pontos;
-            localStorage.setItem("recorde", recorde);
-            document.getElementById("recorde").innerText = recorde;
-        }
-
         document.getElementById("status").innerHTML =
-            `<span class="vitoria">🎉 Você venceu!</span><br><button onclick="iniciar()">Jogar novamente</button>`;
+            `<span class="vitoria">🎉 Vitória!</span><br><button onclick="iniciar()">Jogar novamente</button>`;
         document.getElementById("letras").innerHTML = "";
         return;
     }
 
     if (perdeu) {
         document.getElementById("status").innerHTML =
-            `<span class="derrota">💀 Você perdeu! Palavra: ${palavra}</span><br><button onclick="iniciar()">Tentar novamente</button>`;
+            `<span class="derrota">💀 Derrota! Palavra: ${palavra}</span><br><button onclick="iniciar()">Tentar novamente</button>`;
         document.getElementById("letras").innerHTML = "";
         return;
     }
@@ -215,11 +175,9 @@ function jogar(letra) {
 
     if (palavra.includes(letra)) {
         pontos += 10;
-        document.getElementById("acerto").play();
     } else {
         erros++;
         pontos -= 5;
-        document.getElementById("erro").play();
     }
 
     render();
