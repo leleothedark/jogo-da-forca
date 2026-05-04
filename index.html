@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forca Pro</title>
+<title>Forca </title>
 
 <style>
 body {
@@ -47,6 +47,10 @@ canvas {
 
 <h1>🪓 FORCA </h1>
 
+<button onclick="toggleSom()" id="somBtn">🔊 Som ON</button>
+
+<br>
+
 <select id="categoria" onchange="iniciar()">
 <option value="animais">Animais</option>
 <option value="frutas">Frutas</option>
@@ -81,12 +85,40 @@ let pontos = 0;
 let inicio;
 let max_erros = 6;
 
+// 🔊 SISTEMA DE SOM
+let somAtivo = true;
+const somAcerto = new Audio("acerto.mp3");
+const somErro = new Audio("erro.mp3");
+
+// desbloqueio de áudio (necessário em navegadores)
+document.body.addEventListener("click", () => {
+    somAcerto.play().then(() => somAcerto.pause()).catch(()=>{});
+}, { once: true });
+
+function tocarAcerto() {
+    if (!somAtivo) return;
+    somAcerto.currentTime = 0;
+    somAcerto.play();
+}
+
+function tocarErro() {
+    if (!somAtivo) return;
+    somErro.currentTime = 0;
+    somErro.play();
+}
+
+function toggleSom() {
+    somAtivo = !somAtivo;
+    document.getElementById("somBtn").innerText =
+        somAtivo ? "🔊 Som ON" : "🔇 Som OFF";
+}
+
+// 🎮 INICIAR JOGO
 function iniciar() {
     const categoria = document.getElementById("categoria").value;
     const dificuldade = document.getElementById("dificuldade").value;
     const lista = PALAVRAS[categoria];
 
-    // evitar repetir palavra
     do {
         palavra = lista[Math.floor(Math.random() * lista.length)];
     } while (palavra === ultimaPalavra);
@@ -108,6 +140,7 @@ function iniciar() {
     render();
 }
 
+// 🎨 DESENHO
 function desenhar() {
     const c = document.getElementById("forca");
     const ctx = c.getContext("2d");
@@ -130,6 +163,7 @@ function desenhar() {
     if (erros > 5) { ctx.beginPath(); ctx.moveTo(120,140); ctx.lineTo(150,170); ctx.stroke(); }
 }
 
+// 🧠 RENDER
 function render() {
     desenhar();
 
@@ -170,14 +204,17 @@ function render() {
         .join("");
 }
 
+// 🎯 JOGADA
 function jogar(letra) {
     letras.push(letra);
 
     if (palavra.includes(letra)) {
         pontos += 10;
+        tocarAcerto();
     } else {
         erros++;
         pontos -= 5;
+        tocarErro();
     }
 
     render();
