@@ -1,85 +1,143 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Forca em Python</title>
+<meta charset="UTF-8">
+<title>Forca</title>
 
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
-    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #0f2027;
+    color: white;
+}
 
-    <style>
-        body { text-align:center; font-family:Arial; background:#111; color:white; }
-        button { margin:5px; padding:10px; }
-    </style>
+h1 { margin-top: 20px; }
+
+button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#palavra {
+    font-size: 30px;
+    letter-spacing: 10px;
+    margin: 20px;
+}
+
+.vitoria { color: #00ff88; }
+.derrota { color: red; }
+
+select {
+    padding: 8px;
+    font-size: 16px;
+}
+</style>
 </head>
 
 <body>
 
-<h1>🪓 Forca (Python)</h1>
+<h1>🪓 FORCA</h1>
+
+<p>
+Categoria:
+<select id="categoria" onchange="iniciar()">
+    <option value="animais">Animais</option>
+    <option value="frutas">Frutas</option>
+    <option value="paises">Países</option>
+</select>
+</p>
 
 <p id="info"></p>
-<h2 id="palavra"></h2>
-<div id="letras"></div>
+<div id="palavra"></div>
 <p id="status"></p>
+<div id="letras"></div>
 
-<py-script>
-import random
-from js import document
-import time
+<script>
+const PALAVRAS = {
+    animais: ["gato","elefante","tigre","girafa","leao","urso","panda","macaco"],
+    frutas: ["banana","maca","uva","manga","abacaxi","pera","morango"],
+    paises: ["brasil","canada","japao","mexico","espanha","egito","alemanha"]
+};
 
-PALAVRAS = {
-    "animais": ["gato","elefante","tigre","girafa"],
-    "frutas": ["banana","maca","uva"],
-    "paises": ["brasil","canada","japao"]
+let palavra = "";
+let letras = [];
+let erros = 0;
+let pontos = 0;
+let inicio;
+const MAX_ERROS = 6;
+
+function iniciar() {
+    const categoria = document.getElementById("categoria").value;
+    palavra = PALAVRAS[categoria][Math.floor(Math.random()*PALAVRAS[categoria].length)];
+    letras = [];
+    erros = 0;
+    pontos = 0;
+    inicio = Date.now();
+    render();
 }
 
-palavra = random.choice(PALAVRAS["animais"])
-letras = []
-erros = 0
-pontos = 0
-MAX_ERROS = 6
-inicio = time.time()
+function render() {
+    const tempo = Math.floor((Date.now() - inicio) / 1000);
 
-def render():
-    global palavra
+    document.getElementById("info").innerText =
+        `Tempo: ${tempo}s | Erros: ${erros}/${MAX_ERROS} | Pontos: ${pontos}`;
 
-    tempo = int(time.time() - inicio)
+    const palavraMostrada = palavra
+        .split("")
+        .map(l => letras.includes(l) ? l : "_")
+        .join(" ");
 
-    mostrada = " ".join([l if l in letras else "_" for l in palavra])
+    document.getElementById("palavra").innerText = palavraMostrada;
 
-    document.getElementById("palavra").innerText = mostrada
-    document.getElementById("info").innerText = f"Erros: {erros}/{MAX_ERROS} | Pontos: {pontos} | Tempo: {tempo}s"
+    const ganhou = !palavraMostrada.includes("_");
+    const perdeu = erros >= MAX_ERROS;
 
-    if "_" not in mostrada:
-        document.getElementById("status").innerText = "🎉 Você ganhou!"
-        return
+    if (ganhou) {
+        document.getElementById("status").innerHTML =
+            `<span class="vitoria">🎉 Você venceu! Pontos: ${pontos}</span><br><button onclick="iniciar()">Jogar novamente</button>`;
+        document.getElementById("letras").innerHTML = "";
+        return;
+    }
 
-    if erros >= MAX_ERROS:
-        document.getElementById("status").innerText = f"💀 Você perdeu! Palavra: {palavra}"
-        return
+    if (perdeu) {
+        document.getElementById("status").innerHTML =
+            `<span class="derrota">💀 Você perdeu! Palavra: ${palavra}</span><br><button onclick="iniciar()">Tentar novamente</button>`;
+        document.getElementById("letras").innerHTML = "";
+        return;
+    }
 
-    botoes = ""
-    for l in "abcdefghijklmnopqrstuvwxyz":
-        if l not in letras:
-            botoes += f"<button onclick='jogar(\"{l}\")'>{l}</button>"
+    document.getElementById("status").innerText = "";
 
-    document.getElementById("letras").innerHTML = botoes
+    const alfabeto = "abcdefghijklmnopqrstuvwxyz";
 
-def jogar(letra):
-    global erros, pontos
+    document.getElementById("letras").innerHTML = alfabeto
+        .split("")
+        .map(l => {
+            if (letras.includes(l)) return "";
+            return `<button onclick="jogar('${l}')">${l}</button>`;
+        })
+        .join("");
+}
 
-    letras.append(letra)
+function jogar(letra) {
+    letras.push(letra);
 
-    if letra in palavra:
-        pontos += 10
-    else:
-        erros += 1
-        pontos -= 5
+    if (palavra.includes(letra)) {
+        pontos += 10;
+    } else {
+        erros++;
+        pontos -= 5;
+    }
 
-    render()
+    render();
+}
 
-render()
-</py-script>
+// iniciar ao carregar
+iniciar();
+</script>
 
 </body>
 </html>
