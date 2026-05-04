@@ -1,126 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
-    <title>Forca</title>
+    <meta charset="UTF-8">
+    <title>Forca em Python</title>
+
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
     <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            background: radial-gradient(circle, #0f2027, #203a43, #2c5364);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .game {
-            text-align: center;
-            background: rgba(0,0,0,0.4);
-            padding: 25px;
-            border-radius: 20px;
-            width: 450px;
-            box-shadow: 0 0 20px black;
-        }
-
-        h1 {
-            margin-bottom: 10px;
-        }
-
-        .word {
-            font-size: 36px;
-            letter-spacing: 8px;
-            margin: 20px 0;
-        }
-
-        .info {
-            font-size: 14px;
-            margin: 10px;
-            opacity: 0.8;
-        }
-
-        .keyboard {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        .key {
-            width: 35px;
-            height: 35px;
-            border: none;
-            border-radius: 6px;
-            background: #00c6ff;
-            color: white;
-            cursor: pointer;
-        }
-
-        .key:disabled {
-            background: gray;
-        }
-
-        .win { color: lime; }
-        .lose { color: red; }
-
-        .stats {
-            margin: 10px 0;
-            font-size: 14px;
-        }
+        body { text-align:center; font-family:Arial; background:#111; color:white; }
+        button { margin:5px; padding:10px; }
     </style>
 </head>
 
 <body>
 
-<div class="game">
+<h1>🪓 Forca (Python)</h1>
 
-    <h1>🪓 FORCA</h1>
+<p id="info"></p>
+<h2 id="palavra"></h2>
+<div id="letras"></div>
+<p id="status"></p>
 
-    <div class="info">
-        Categoria: {{ dificuldade }} | Tempo: {{ tempo }}s
-    </div>
+<py-script>
+import random
+from js import document
+import time
 
-    <div class="stats">
-        Erros: {{ erros }}/{{ max_erros }} | Pontos: {{ pontos }}
-    </div>
+PALAVRAS = {
+    "animais": ["gato","elefante","tigre","girafa"],
+    "frutas": ["banana","maca","uva"],
+    "paises": ["brasil","canada","japao"]
+}
 
-    <div class="word">
-        {{ palavra }}
-    </div>
+palavra = random.choice(PALAVRAS["animais"])
+letras = []
+erros = 0
+pontos = 0
+MAX_ERROS = 6
+inicio = time.time()
 
-    {% if not ganhou and not perdeu %}
+def render():
+    global palavra
 
-    <form method="POST">
-        <div class="keyboard">
+    tempo = int(time.time() - inicio)
 
-            {% for l in "abcdefghijklmnopqrstuvwxyz" %}
+    mostrada = " ".join([l if l in letras else "_" for l in palavra])
 
-            <button class="key" name="letra" value="{{ l }}"
-                {% if l in letras %}disabled{% endif %}>
-                {{ l }}
-            </button>
+    document.getElementById("palavra").innerText = mostrada
+    document.getElementById("info").innerText = f"Erros: {erros}/{MAX_ERROS} | Pontos: {pontos} | Tempo: {tempo}s"
 
-            {% endfor %}
+    if "_" not in mostrada:
+        document.getElementById("status").innerText = "🎉 Você ganhou!"
+        return
 
-        </div>
-    </form>
+    if erros >= MAX_ERROS:
+        document.getElementById("status").innerText = f"💀 Você perdeu! Palavra: {palavra}"
+        return
 
-    {% endif %}
+    botoes = ""
+    for l in "abcdefghijklmnopqrstuvwxyz":
+        if l not in letras:
+            botoes += f"<button onclick='jogar(\"{l}\")'>{l}</button>"
 
-    {% if ganhou %}
-        <h2 class="win">🎉 Você venceu!</h2>
-        <p>Pontos: {{ pontos }}</p>
-        <a href="/reset">Jogar novamente</a>
-    {% endif %}
+    document.getElementById("letras").innerHTML = botoes
 
-    {% if perdeu %}
-        <h2 class="lose">💀 Você perdeu!</h2>
-        <p>A palavra era: {{ palavra_real }}</p>
-        <a href="/reset">Tentar novamente</a>
-    {% endif %}
+def jogar(letra):
+    global erros, pontos
 
-</div>
+    letras.append(letra)
+
+    if letra in palavra:
+        pontos += 10
+    else:
+        erros += 1
+        pontos -= 5
+
+    render()
+
+render()
+</py-script>
 
 </body>
 </html>
