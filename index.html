@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forca </title>
+<title>Forca</title>
 
 <style>
 body {
@@ -11,15 +12,30 @@ body {
     text-align: center;
     background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     color: white;
+    margin: 0;
+    padding: 20px;
 }
 
-h1 { margin-top: 10px; }
+h1 {
+    margin-top: 10px;
+    font-size: 32px;
+}
 
-select, button {
+select, button, input {
     margin: 5px;
     padding: 10px;
     font-size: 16px;
     border-radius: 8px;
+    border: none;
+}
+
+button {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
 }
 
 canvas {
@@ -29,25 +45,61 @@ canvas {
 }
 
 #palavra {
-    font-size: 28px;
+    font-size: 32px;
     letter-spacing: 8px;
     margin: 20px 0;
+    font-weight: bold;
 }
 
-.vitoria { color: #00ff88; }
-.derrota { color: red; }
+#info {
+    font-size: 18px;
+    margin-top: 10px;
+    line-height: 1.8;
+}
+
+.vitoria {
+    color: #00ff88;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.derrota {
+    color: red;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#letras button {
+    margin: 3px;
+}
+
+#chuteContainer {
+    margin-top: 15px;
+}
+
+#chutePalavra {
+    width: 220px;
+}
 
 @media (max-width: 600px) {
-    #palavra { font-size: 22px; }
+    #palavra {
+        font-size: 22px;
+    }
+
+    button, select, input {
+        font-size: 14px;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<h1>🪓 FORCA </h1>
+<h1>🪓 FORCA</h1>
 
-<button onclick="toggleSom()" id="somBtn">🔊 Som ON</button>
+<button onclick="toggleSom()" id="somBtn">
+🔊 Som ON
+</button>
 
 <br>
 
@@ -66,15 +118,42 @@ canvas {
 <canvas id="forca" width="200" height="200"></canvas>
 
 <p id="info"></p>
+
 <div id="palavra"></div>
+
+<!-- 🎯 CHUTE DA PALAVRA -->
+<div id="chuteContainer">
+    <input
+        type="text"
+        id="chutePalavra"
+        placeholder="Chutar palavra completa"
+    >
+
+    <button onclick="chutarPalavra()">
+        🎯 Chutar
+    </button>
+</div>
+
 <p id="status"></p>
+
 <div id="letras"></div>
 
 <script>
 const PALAVRAS = {
-    animais: ["gato","elefante","tigre","girafa","leao","urso","panda","macaco"],
-    frutas: ["banana","maca","uva","manga","abacaxi","pera","morango"],
-    paises: ["brasil","canada","japao","mexico","espanha","egito","alemanha"]
+    animais: [
+        "gato","elefante","tigre","girafa",
+        "leao","urso","panda","macaco"
+    ],
+
+    frutas: [
+        "banana","maca","uva","manga",
+        "abacaxi","pera","morango"
+    ],
+
+    paises: [
+        "brasil","canada","japao",
+        "mexico","espanha","egito","alemanha"
+    ]
 };
 
 let palavra = "";
@@ -84,43 +163,59 @@ let erros = 0;
 let pontos = 0;
 let inicio;
 let max_erros = 6;
+let chutesRestantes = 2;
 
-// 🔊 SISTEMA DE SOM
+// 🔊 SOM
 let somAtivo = true;
+
 const somAcerto = new Audio("acerto.mp3");
 const somErro = new Audio("erro.mp3");
 
-// desbloqueio de áudio (necessário em navegadores)
+// desbloqueio do áudio
 document.body.addEventListener("click", () => {
-    somAcerto.play().then(() => somAcerto.pause()).catch(()=>{});
+    somAcerto.play()
+        .then(() => somAcerto.pause())
+        .catch(() => {});
 }, { once: true });
 
 function tocarAcerto() {
     if (!somAtivo) return;
+
     somAcerto.currentTime = 0;
     somAcerto.play();
 }
 
 function tocarErro() {
     if (!somAtivo) return;
+
     somErro.currentTime = 0;
     somErro.play();
 }
 
 function toggleSom() {
     somAtivo = !somAtivo;
+
     document.getElementById("somBtn").innerText =
-        somAtivo ? "🔊 Som ON" : "🔇 Som OFF";
+        somAtivo
+        ? "🔊 Som ON"
+        : "🔇 Som OFF";
 }
 
-// 🎮 INICIAR JOGO
+// 🎮 INICIAR
 function iniciar() {
-    const categoria = document.getElementById("categoria").value;
-    const dificuldade = document.getElementById("dificuldade").value;
+
+    const categoria =
+        document.getElementById("categoria").value;
+
+    const dificuldade =
+        document.getElementById("dificuldade").value;
+
     const lista = PALAVRAS[categoria];
 
     do {
-        palavra = lista[Math.floor(Math.random() * lista.length)];
+        palavra =
+            lista[Math.floor(Math.random() * lista.length)];
+
     } while (palavra === ultimaPalavra);
 
     ultimaPalavra = palavra;
@@ -128,100 +223,277 @@ function iniciar() {
     letras = [];
     erros = 0;
     pontos = 0;
+
     inicio = Date.now();
 
-    if (dificuldade === "facil") max_erros = 8;
-    else if (dificuldade === "medio") max_erros = 6;
-    else max_erros = 4;
+    chutesRestantes = 2;
+
+    if (dificuldade === "facil") {
+        max_erros = 8;
+    }
+
+    else if (dificuldade === "medio") {
+        max_erros = 6;
+    }
+
+    else {
+        max_erros = 4;
+    }
 
     document.getElementById("status").innerHTML = "";
     document.getElementById("letras").innerHTML = "";
+    document.getElementById("chutePalavra").value = "";
 
     render();
 }
 
-// 🎨 DESENHO
+// 🎨 DESENHAR FORCA
 function desenhar() {
+
     const c = document.getElementById("forca");
     const ctx = c.getContext("2d");
 
     ctx.clearRect(0,0,200,200);
+
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
 
+    // estrutura
     ctx.beginPath();
-    ctx.moveTo(10,190); ctx.lineTo(190,190);
-    ctx.moveTo(50,190); ctx.lineTo(50,20);
-    ctx.lineTo(120,20); ctx.lineTo(120,40);
+
+    ctx.moveTo(10,190);
+    ctx.lineTo(190,190);
+
+    ctx.moveTo(50,190);
+    ctx.lineTo(50,20);
+
+    ctx.lineTo(120,20);
+    ctx.lineTo(120,40);
+
     ctx.stroke();
 
-    if (erros > 0) { ctx.beginPath(); ctx.arc(120,60,20,0,Math.PI*2); ctx.stroke(); }
-    if (erros > 1) { ctx.beginPath(); ctx.moveTo(120,80); ctx.lineTo(120,140); ctx.stroke(); }
-    if (erros > 2) { ctx.beginPath(); ctx.moveTo(120,100); ctx.lineTo(90,120); ctx.stroke(); }
-    if (erros > 3) { ctx.beginPath(); ctx.moveTo(120,100); ctx.lineTo(150,120); ctx.stroke(); }
-    if (erros > 4) { ctx.beginPath(); ctx.moveTo(120,140); ctx.lineTo(90,170); ctx.stroke(); }
-    if (erros > 5) { ctx.beginPath(); ctx.moveTo(120,140); ctx.lineTo(150,170); ctx.stroke(); }
+    // cabeça
+    if (erros > 0) {
+        ctx.beginPath();
+        ctx.arc(120,60,20,0,Math.PI*2);
+        ctx.stroke();
+    }
+
+    // corpo
+    if (erros > 1) {
+        ctx.beginPath();
+        ctx.moveTo(120,80);
+        ctx.lineTo(120,140);
+        ctx.stroke();
+    }
+
+    // braço esquerdo
+    if (erros > 2) {
+        ctx.beginPath();
+        ctx.moveTo(120,100);
+        ctx.lineTo(90,120);
+        ctx.stroke();
+    }
+
+    // braço direito
+    if (erros > 3) {
+        ctx.beginPath();
+        ctx.moveTo(120,100);
+        ctx.lineTo(150,120);
+        ctx.stroke();
+    }
+
+    // perna esquerda
+    if (erros > 4) {
+        ctx.beginPath();
+        ctx.moveTo(120,140);
+        ctx.lineTo(90,170);
+        ctx.stroke();
+    }
+
+    // perna direita
+    if (erros > 5) {
+        ctx.beginPath();
+        ctx.moveTo(120,140);
+        ctx.lineTo(150,170);
+        ctx.stroke();
+    }
 }
 
 // 🧠 RENDER
 function render() {
+
     desenhar();
 
-    const tempo = Math.floor((Date.now() - inicio) / 1000);
+    const tempo =
+        Math.floor((Date.now() - inicio) / 1000);
 
-    document.getElementById("info").innerText =
-        `Tempo: ${tempo}s | Erros: ${erros}/${max_erros} | Pontos: ${pontos}`;
+    document.getElementById("info").innerHTML = `
+        ⏱ Tempo: ${tempo}s
+        <br>
+        ❌ Erros: ${erros}/${max_erros}
+        <br>
+        ⭐ Pontos: ${pontos}
+        <br>
+        🔤 Quantidade de letras: ${palavra.length}
+        <br>
+        🎯 Chutes da palavra restantes: ${chutesRestantes}
+    `;
 
     const palavraMostrada = palavra
         .split("")
-        .map(l => letras.includes(l) ? l : "_")
+        .map(l =>
+            letras.includes(l)
+            ? l
+            : "_"
+        )
         .join(" ");
 
-    document.getElementById("palavra").innerText = palavraMostrada;
+    document.getElementById("palavra")
+        .innerText = palavraMostrada;
 
-    const ganhou = !palavraMostrada.includes("_");
-    const perdeu = erros >= max_erros;
+    const ganhou =
+        !palavraMostrada.includes("_");
 
+    const perdeu =
+        erros >= max_erros;
+
+    // vitória
     if (ganhou) {
-        document.getElementById("status").innerHTML =
-            `<span class="vitoria">🎉 Vitória!</span><br><button onclick="iniciar()">Jogar novamente</button>`;
+
+        document.getElementById("status").innerHTML = `
+            <span class="vitoria">
+                🎉 Vitória!
+            </span>
+            <br><br>
+            <button onclick="iniciar()">
+                Jogar novamente
+            </button>
+        `;
+
         document.getElementById("letras").innerHTML = "";
+
         return;
     }
 
+    // derrota
     if (perdeu) {
-        document.getElementById("status").innerHTML =
-            `<span class="derrota">💀 Derrota! Palavra: ${palavra}</span><br><button onclick="iniciar()">Tentar novamente</button>`;
+
+        document.getElementById("status").innerHTML = `
+            <span class="derrota">
+                💀 Derrota! Palavra: ${palavra}
+            </span>
+            <br><br>
+            <button onclick="iniciar()">
+                Tentar novamente
+            </button>
+        `;
+
         document.getElementById("letras").innerHTML = "";
+
         return;
     }
 
+    // teclado
     const alfabeto = "abcdefghijklmnopqrstuvwxyz";
 
-    document.getElementById("letras").innerHTML = alfabeto
+    document.getElementById("letras").innerHTML =
+        alfabeto
         .split("")
-        .map(l => letras.includes(l) ? "" : `<button onclick="jogar('${l}')">${l}</button>`)
+        .map(l =>
+
+            letras.includes(l)
+            ? ""
+
+            : `<button onclick="jogar('${l}')">${l}</button>`
+
+        )
         .join("");
 }
 
-// 🎯 JOGADA
+// 🎯 JOGAR LETRA
 function jogar(letra) {
+
     letras.push(letra);
 
     if (palavra.includes(letra)) {
+
         pontos += 10;
+
         tocarAcerto();
+
     } else {
+
         erros++;
+
         pontos -= 5;
+
         tocarErro();
     }
 
     render();
 }
 
+// 🧠 CHUTAR PALAVRA COMPLETA
+function chutarPalavra() {
+
+    const input =
+        document.getElementById("chutePalavra");
+
+    const chute =
+        input.value
+        .toLowerCase()
+        .trim();
+
+    if (!chute) return;
+
+    if (chutesRestantes <= 0) {
+        alert("❌ Você não possui mais chutes!");
+        return;
+    }
+
+    // acertou
+    if (chute === palavra) {
+
+        letras = palavra.split("");
+
+        pontos += 50;
+
+        tocarAcerto();
+    }
+
+    // errou
+    else {
+
+        chutesRestantes--;
+
+        erros++;
+
+        pontos -= 15;
+
+        tocarErro();
+
+        alert("❌ Palavra incorreta!");
+    }
+
+    input.value = "";
+
+    render();
+}
+
+// ENTER no input
+document
+.getElementById("chutePalavra")
+.addEventListener("keypress", function(e) {
+
+    if (e.key === "Enter") {
+        chutarPalavra();
+    }
+});
+
 iniciar();
 </script>
 
 </body>
 </html>
+```
